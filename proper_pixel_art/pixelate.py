@@ -147,6 +147,8 @@ def pixelate(
     if transparent_background:
         result = colors.make_background_transparent(result)
 
+    # Run AFTER make_background_transparent (include its transparency in the trim)
+    # and BEFORE scale_result (measure the bbox at true pixel resolution).
     if crop_to_square:
         result = utils.trim_alpha_to_square(result)
 

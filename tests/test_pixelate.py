@@ -33,7 +33,9 @@ def test_pixelate_pngs(pixelate_png_test_params: dict[str, dict]) -> None:
         # Verify the output exists and has a width and height
         assert result_path.exists(), f"Output file not created for {name}"
         assert result.width > 0 and result.height > 0, f"Invalid dimensions for {name}"
-        assert result.width == result.height, f"Output not square for {name}"
+        assert result.width == result.height, (
+            f"Output not square for {name}: {result.width}x{result.height}"
+        )
 
         print(f"Generated output for {name}: {result_path}")
     print(

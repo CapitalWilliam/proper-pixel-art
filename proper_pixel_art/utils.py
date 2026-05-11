@@ -2,6 +2,8 @@
 
 from PIL import Image, ImageDraw
 
+from proper_pixel_art.colors import ALPHA_THRESHOLD
+
 Lines = list[int]  # Lines are a list of pixel indices for an image
 Mesh = tuple[
     Lines, Lines
@@ -59,7 +61,7 @@ def scale_img(img: Image.Image, scale: int) -> Image.Image:
 
 def trim_alpha_to_square(
     image: Image.Image,
-    alpha_threshold: int = 128,
+    alpha_threshold: int = ALPHA_THRESHOLD,
 ) -> Image.Image:
     """
     Crop the transparent border (alpha < threshold) of an image,

@@ -25,6 +25,7 @@ class TestTrimAlphaToSquare:
         img = _make_rgba(5, 5, (255, 0, 0, 255))
         result = utils.trim_alpha_to_square(img)
         assert result.size == (5, 5)
+        assert result.mode == "RGBA"
         assert result.getpixel((0, 0)) == (255, 0, 0, 255)
 
     def test_padded_sprite_is_cropped_and_squared(self):

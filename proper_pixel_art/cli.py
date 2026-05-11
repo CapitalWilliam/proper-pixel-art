@@ -70,7 +70,7 @@ def add_pixelation_args(
         dest="crop_to_square",
         action="store_false",
         default=True,
-        help="Disable trim-to-bbox and pad-to-square on the output (default: enabled).",
+        help="Skip cropping the result to its content and padding to a square (default: cropped and squared).",
     )
     return parser
 

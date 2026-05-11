@@ -55,3 +55,41 @@ def scale_img(img: Image.Image, scale: int) -> Image.Image:
     new_size = w_new, h_new
     scaled_img = img.resize(new_size, resample=Image.Resampling.NEAREST)
     return scaled_img
+
+
+def trim_alpha_to_square(
+    image: Image.Image,
+    alpha_threshold: int = 128,
+) -> Image.Image:
+    """
+    Crop the transparent border (alpha < threshold) of an image,
+    then pad the shorter side with fully transparent pixels so the
+    result is square. Sprite stays visually centered; if the padding
+    deficit is odd the extra pixel goes on the right/bottom.
+
+    If no pixel meets the alpha threshold (image is effectively
+    fully transparent), returns the input unchanged (as an RGBA copy).
+    """
+    rgba = image.convert("RGBA")
+    alpha = rgba.getchannel("A")
+    # Binary mask: 255 where alpha >= threshold, 0 elsewhere
+    mask = alpha.point(lambda p: 255 if p >= alpha_threshold else 0)
+    bbox = mask.getbbox()
+
+    if bbox is None:
+        return rgba.copy()
+
+    cropped = rgba.crop(bbox)
+    w, h = cropped.size
+    if w == h:
+        return cropped
+
+    side = max(w, h)
+    pad_w = side - w
+    pad_h = side - h
+    pad_left = pad_w // 2
+    pad_top = pad_h // 2
+
+    result = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    result.paste(cropped, (pad_left, pad_top))
+    return result

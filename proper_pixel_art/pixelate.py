@@ -76,6 +76,7 @@ def pixelate(
     transparent_background: bool = False,
     intermediate_dir: Path | None = None,
     pixel_width: int | None = None,
+    crop_to_square: bool = True,
 ) -> Image.Image:
     """
     Computes the true resolution pixel art image.
@@ -99,6 +100,9 @@ def pixelate(
         directory to save images visualizing intermediate steps.
     - pixel_width:
         If set, skips the step to automatically identify pixel width and uses this value.
+    - crop_to_square:
+        If True (default), trim the transparent border of the result and
+        pad the shorter side with transparent pixels so the output is square.
 
     Returns the true pixelated image.
     """
@@ -142,6 +146,9 @@ def pixelate(
 
     if transparent_background:
         result = colors.make_background_transparent(result)
+
+    if crop_to_square:
+        result = utils.trim_alpha_to_square(result)
 
     if scale_result is not None:
         result = utils.scale_img(result, int(scale_result))

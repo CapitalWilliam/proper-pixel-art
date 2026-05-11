@@ -65,6 +65,13 @@ def add_pixelation_args(
             "it may be useful to increase this value."
         ),
     )
+    pixel_group.add_argument(
+        "--no-square",
+        dest="crop_to_square",
+        action="store_false",
+        default=True,
+        help="Disable trim-to-bbox and pad-to-square on the output (default: enabled).",
+    )
     return parser
 
 
@@ -134,6 +141,7 @@ def main() -> None:
         transparent_background=args.transparent,
         pixel_width=args.pixel_width,
         initial_upscale_factor=args.initial_upscale,
+        crop_to_square=args.crop_to_square,
     )
 
     pixelated.save(out_path)

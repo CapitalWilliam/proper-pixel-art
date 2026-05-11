@@ -144,6 +144,7 @@ def process_image(
         scale_result=args.scale_result,
         transparent_background=args.transparent,
         pixel_width=args.pixel_width,
+        crop_to_square=args.crop_to_square,
     )
 
     # Save pixelated

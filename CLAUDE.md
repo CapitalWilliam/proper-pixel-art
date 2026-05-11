@@ -30,9 +30,10 @@ uv run ruff check
 uv run ruff format --check     # CI 用,本地修复时改成 `uv run ruff format`
 
 # 三个 console 入口
-uv run ppa <input> -o <output> -c 16 -s 20 -t   # CLI 像素化
-uv run ppa-web                                   # Gradio 网页(http://127.0.0.1:7860)
-uv run ppa-gen --prompt "16 bit pixel art ..."   # 调 OpenAI 生成后再像素化(需 .env)
+uv run ppa <input> -o <output> -c 16 -s 20 -t                # CLI 像素化(默认裁剪为正方形)
+uv run ppa <input> -o <output> -c 16 -s 20 -t --no-square    # 关闭"裁剪到正方形"
+uv run ppa-web                                                # Gradio 网页(http://127.0.0.1:7860)
+uv run ppa-gen --prompt "16 bit pixel art ..."                # 调 OpenAI 生成后再像素化(需 .env)
 ```
 
 部署相关:仓库根有 `app.py`,是 **Hugging Face Spaces 入口**(`from proper_pixel_art.web import create_demo`)。`.github/workflows/publish.yml` 在 GitHub Release 时自动发布到 PyPI。
@@ -66,8 +67,11 @@ PIL.Image (RGBA)
    │      ▸ 不量化:colors.get_cell_color_skip_quantization() — offset-binning 找主导色
    │
    ├─► (可选) colors.make_background_transparent()   # 把和边缘主色相同的所有像素 alpha=0
+   ├─► (可选,默认开) utils.trim_alpha_to_square()    # 按 alpha>=128 取 bbox 裁剪 + 短边补透明像素到正方形
    └─► (可选) utils.scale_img(scale_result)          # 最近邻放大输出
 ```
+
+**顺序敏感**:`trim_alpha_to_square` **必须**在 `make_background_transparent` 之后(包含它产生的透明像素),且在 `scale_result` 之前(bbox 在真实像素分辨率上量,避免最近邻放大产生的 off-by-N)。
 
 ### 关键设计点(改代码前务必理解)
 
@@ -81,13 +85,17 @@ PIL.Image (RGBA)
 
 - **`pixel_width` 手动覆盖**:用户可以跳过自动估算的网格步长(`get_pixel_width`),CLI 是 `-w`,Python API 是 `pixel_width=`。修改 mesh 算法时要确保这条手动路径仍然生效。
 
-- **CLI 参数复用**:`scripts/ppa_gen.py` 通过 `proper_pixel_art.cli.add_pixelation_args()` 共享了 `-c/-s/-t/-w/-u` 等参数。给 CLI 加新参数时,应该加进 `add_pixelation_args` 而不是 `parse_args`,否则 `ppa-gen` 拿不到。
+- **CLI 参数复用**:`scripts/ppa_gen.py` 通过 `proper_pixel_art.cli.add_pixelation_args()` 共享了 `-c/-s/-t/-w/-u/--no-square` 等参数。给 CLI 加新参数时,应该加进 `add_pixelation_args` 而不是 `parse_args`,否则 `ppa-gen` 拿不到。
+
+- **`crop_to_square` 默认开启**:`pixelate(crop_to_square=True)` 是默认行为,CLI 用 `--no-square` 关闭(`dest="crop_to_square"`、`action="store_false"`),Web UI 是默认勾选的 `Crop to Square` 复选框。三个入口的默认语义必须保持一致 — 改默认时三处都要改。完全透明的图像会原样返回(不裁、不补)。
 
 ## 测试约定
 
 - `tests/conftest.py` 的 `pixelate_png_test_params` fixture **硬编码引用 `assets/<name>/<name>.png`**(anchor / ash / bat / blob / demon / mountain / pumpkin)。删改 `assets/` 会让测试失败。
 
-- `tests/test_pixelate.py::test_pixelate_pngs` 是 **视觉回归测试**:只断言结果文件存在且非零尺寸,真正的"对错"靠人工肉眼看 `tests/outputs/<name>/`(包含 `edges.png`、`mesh.png` 等中间产物)。改算法后**必须**手动查看输出,光看 `pytest` 绿不算 OK。
+- `tests/test_pixelate.py::test_pixelate_pngs` 是 **视觉回归测试**:断言结果文件存在、尺寸非零、**且 `width == height`**(由 `crop_to_square` 默认开启所保证)。真正的"对错"仍然靠人工肉眼看 `tests/outputs/<name>/`(包含 `edges.png`、`mesh.png` 等中间产物)。改算法后**必须**手动查看输出,光看 `pytest` 绿不算 OK。
+
+- `tests/test_utils.py` 覆盖 `trim_alpha_to_square` 的 7 个 case:全透明、紧密正方形、四面填充、横宽、纵高、奇数填充差(多出的 1 像素去 right/bottom)、alpha 阈值边界(127 排除 / 128 保留)。调裁剪逻辑前先看这些 case。
 
 - 调像素化质量时:先调 `tests/conftest.py` 里对应 case 的 `num_colors`,再跑 `uv run pytest -s tests/test_pixelate.py`,然后看 `tests/outputs/`。这是项目约定的视觉调参流程(`.github/CONTRIBUTING.md`)。
 

@@ -8,6 +8,11 @@ from PIL import Image
 from proper_pixel_art import pixelate
 
 
+def size_suffix(size: tuple[int, int] | None) -> str:
+    """Render '_<W>x<H>' for embedding in filenames, or '' if size is None."""
+    return f"_{size[0]}x{size[1]}" if size else ""
+
+
 def add_pixelation_args(
     parser: argparse.ArgumentParser, group_name: str = "Pixelation options"
 ) -> argparse.ArgumentParser:
@@ -114,24 +119,25 @@ def parse_args() -> argparse.Namespace:
 
 
 def resolve_output_path(
-    out_path: Path, input_path: Path, suffix: str = "_pixelated"
+    out_path: Path,
+    input_path: Path,
+    suffix: str = "_pixelated",
+    size: tuple[int, int] | None = None,
 ) -> Path:
     """
     If outpath is a directory, make it a file path
-    with filename e.g. (input stem)_pixelated.png
+    with filename e.g. (input stem)_pixelated.png, or
+    (input stem)_pixelated_18x18.png when size is provided.
     """
     if out_path.suffix:
         return out_path
-    filename = f"{input_path.stem}{suffix}.png"
+    filename = f"{input_path.stem}{suffix}{size_suffix(size)}.png"
     return out_path / filename
 
 
 def main() -> None:
     args = parse_args()
     input_path = Path(args.input_path).expanduser()
-
-    out_path = resolve_output_path(Path(args.out_path), input_path)
-    out_path.parent.mkdir(exist_ok=True, parents=True)
 
     img = Image.open(input_path)
     pixelated = pixelate.pixelate(
@@ -143,6 +149,10 @@ def main() -> None:
         initial_upscale_factor=args.initial_upscale,
         crop_to_square=args.crop_to_square,
     )
+
+    size = pixelated.size if args.crop_to_square else None
+    out_path = resolve_output_path(Path(args.out_path), input_path, size=size)
+    out_path.parent.mkdir(exist_ok=True, parents=True)
 
     pixelated.save(out_path)
 

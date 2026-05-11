@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from PIL import Image
 
-from proper_pixel_art.cli import add_pixelation_args
+from proper_pixel_art.cli import add_pixelation_args, size_suffix
 from proper_pixel_art.pixelate import pixelate
 
 
@@ -126,10 +126,8 @@ def process_image(
     # Generate filenames
     suffix = f"_{index}" if args.n > 1 else ""
     original_filename = f"{timestamp}{suffix}_original.png"
-    pixelated_filename = f"{timestamp}{suffix}_pixelated.png"
 
     original_path = args.output_dir / original_filename
-    pixelated_path = args.output_dir / pixelated_filename
 
     # Save original
     original_image.save(original_path)
@@ -146,6 +144,10 @@ def process_image(
         pixel_width=args.pixel_width,
         crop_to_square=args.crop_to_square,
     )
+
+    size = pixelated_image.size if args.crop_to_square else None
+    pixelated_filename = f"{timestamp}{suffix}_pixelated{size_suffix(size)}.png"
+    pixelated_path = args.output_dir / pixelated_filename
 
     # Save pixelated
     pixelated_image.save(pixelated_path)

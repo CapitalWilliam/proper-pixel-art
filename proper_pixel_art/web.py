@@ -1,10 +1,16 @@
 """Web interface for Proper Pixel Art using Gradio."""
 
+import tempfile
+from pathlib import Path
+
 from PIL import Image
 
+from proper_pixel_art.cli import size_suffix
 from proper_pixel_art.pixelate import pixelate
 
 IMG_HEIGHT = 512
+
+_TMP_DIR = Path(tempfile.mkdtemp(prefix="ppa_"))
 
 
 def process(
@@ -15,11 +21,14 @@ def process(
     initial_upscale: int,
     pixel_width: int,
     crop_to_square: bool,
-) -> Image.Image | None:
+):
     """Process image through pixelation pipeline."""
+    import gradio as gr
+
     if image is None:
-        return None
-    return pixelate(
+        return None, "", gr.update(visible=False)
+
+    result = pixelate(
         image,
         num_colors=num_colors if num_colors > 0 else None,
         transparent_background=transparent,
@@ -27,6 +36,23 @@ def process(
         initial_upscale_factor=initial_upscale,
         pixel_width=pixel_width if pixel_width > 0 else None,
         crop_to_square=crop_to_square,
+    )
+
+    w, h = result.size
+    size = result.size if crop_to_square else None
+    download_path = _TMP_DIR / f"pixelated{size_suffix(size)}.png"
+    result.save(download_path)
+
+    size_text = (
+        f"Output size: **{w} × {h}** px"
+        if crop_to_square
+        else f"Output size: {w} × {h} px (not cropped)"
+    )
+    btn_label = f"Download {w}×{h}.png" if crop_to_square else "Download.png"
+    return (
+        result,
+        size_text,
+        gr.update(value=str(download_path), label=btn_label, visible=True),
     )
 
 
@@ -57,6 +83,8 @@ def create_demo():
                     height=IMG_HEIGHT,
                     interactive=False,
                 )
+                output_size = gr.Markdown("")
+                output_download = gr.DownloadButton(label="Download", visible=False)
 
         with gr.Row():
             num_colors = gr.Slider(
@@ -86,7 +114,7 @@ def create_demo():
                 pixel_width,
                 crop_to_square,
             ],
-            outputs=output_img,
+            outputs=[output_img, output_size, output_download],
         )
 
     return demo

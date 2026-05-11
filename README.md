@@ -77,6 +77,8 @@ uv run ppa <input_path> -o <output_path> -c <num_colors> -s <result_scale> [-t]
 | `-u`, `--initial-upscale` `<int>` | Initial image upscale factor. Increasing this may help detect pixel edges. (default 2)                    |
 | `-w`, `--pixel-width` `<int>`     | Width of the pixels in the input image. If not set, it will be determined automatically. (default: None)  |
 
+> By default, output filenames also embed the cropped resolution: `bat_pixelated_18x18.png`. To disable cropping (and the size suffix), pass `--no-square`.
+
 #### Example
 
 ```bash

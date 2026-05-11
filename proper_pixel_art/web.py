@@ -14,6 +14,7 @@ def process(
     scale: int,
     initial_upscale: int,
     pixel_width: int,
+    crop_to_square: bool,
 ) -> Image.Image | None:
     """Process image through pixelation pipeline."""
     if image is None:
@@ -25,6 +26,7 @@ def process(
         scale_result=scale if scale > 1 else None,
         initial_upscale_factor=initial_upscale,
         pixel_width=pixel_width if pixel_width > 0 else None,
+        crop_to_square=crop_to_square,
     )
 
 
@@ -70,6 +72,7 @@ def create_demo():
 
         with gr.Row():
             transparent = gr.Checkbox(value=False, label="Transparent Background")
+            crop_to_square = gr.Checkbox(value=True, label="Crop to Square")
             btn = gr.Button("Pixelate", variant="primary")
 
         btn.click(
@@ -81,6 +84,7 @@ def create_demo():
                 scale,
                 initial_upscale,
                 pixel_width,
+                crop_to_square,
             ],
             outputs=output_img,
         )

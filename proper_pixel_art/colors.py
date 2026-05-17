@@ -286,7 +286,7 @@ def palette_img(
 
     If the colors of the result don't look right, try increasing num_colors.
     """
-    image_rgb = clamp_alpha(image, mode="RGB")
+    image_rgb = clamp_alpha(image, mode="RGB", background_hex="#FFFFFF")
     quantized_img = image_rgb.quantize(
         colors=num_colors, method=quantize_method, dither=Image.Dither.NONE
     )
